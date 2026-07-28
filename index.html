@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#6366f1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="مصاريف">
+    <link rel="manifest" href="manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>مصاريف — إدارة المصاريف المشتركة</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body data-theme="dark">
+    <!-- شاشة البداية (Splash Screen) — تختفي تلقائيًا بعد اكتمال التحميل -->
+    <div id="splash-screen">
+        <div class="splash-icon">💰</div>
+        <div class="splash-title">مصاريف</div>
+        <div class="splash-spinner"></div>
+    </div>
+    <!-- شاشة قفل الجلسة بالبصمة -->
+    <div id="lock-screen" style="display:none;">
+        <div class="lock-icon">🔒</div>
+        <div class="lock-title">الجلسة مقفولة</div>
+        <div class="lock-sub">أكّد بصمتك أو قفل شاشة جهازك عشان تفتح حسابك</div>
+        <button class="btn btn-primary" onclick="attemptBiometricUnlock()">👆 فتح القفل</button>
+        <button class="btn btn-outline" style="margin-top:10px;" onclick="logoutUser()">🚪 تسجيل خروج</button>
+    </div>
+
+    <!-- الصفحة الفرعية (تفتحها أزرار شبكة الأدوات في الرئيسية) -->
+    <div id="subpage-overlay" class="subpage-overlay" style="display:none;">
+        <div class="subpage-header">
+            <button class="subpage-back-btn" onclick="closeSubpage()">→</button>
+            <div class="subpage-title" id="subpage-title"></div>
+            <div style="width:38px;"></div>
+        </div>
+        <div class="subpage-content" id="subpage-content"></div>
+    </div>
+    <!-- التنبيهات — دايمًا ظاهرة فوق أي شاشة (دخول أو محتوى رئيسي) -->
+    <div id="alerts-container"></div>
+    <!-- ================================
+         🔐 شاشة تسجيل الدخول
+    ================================ -->
+    <!-- ================================
+         🏠 شاشة اختيار الجروب
+    ================================ -->
+    <div id="group-screen" class="login-screen" style="display:none;">
+        <div class="login-card">
+
+            <!-- الإطار العربي SVG -->
+            <svg class="arabic-frame" viewBox="0 0 400 520" xmlns="http://www.w3.org/2000/svg">
+                <!-- زوايا عربية أعلى يسار -->
+                <g fill="none" stroke="currentColor" stroke-width="1.5" color="#6366f1">
+                    <path d="M20,20 Q20,8 32,8 L80,8"/>
+                    <path d="M8,20 L8,80 Q8,20 20,20"/>
+                    <circle cx="20" cy="20" r="4" fill="#6366f1" stroke="none"/>
+                    <path d="M32,8 Q44,2 44,14 Q44,20 38,20 Q32,20 32,14 Q32,8 38,8" fill="none"/>
+                    <path d="M8,50 Q2,44 8,38" stroke-linecap="round"/>
+                    <path d="M50,8 Q44,2 50,2" stroke-linecap="round"/>
+                    <!-- زخرفة -->
+                    <path d="M24,8 C28,4 36,4 36,10 C36,16 28,18 24,14 C20,10 24,6 28,8" fill="rgba(99,102,241,0.3)" stroke="none"/>
+                </g>
+                <!-- زوايا أعلى يمين -->
+                <g fill="none" stroke="currentColor" stroke-width="1.5" color="#6366f1">
+                    <path d="M380,20 Q380,8 368,8 L320,8"/>
+                    <path d="M392,20 L392,80 Q392,20 380,20"/>
+                    <circle cx="380" cy="20" r="4" fill="#6366f1" stroke="none"/>
+                    <path d="M368,8 Q356,2 356,14 Q356,20 362,20 Q368,20 368,14 Q368,8 362,8" fill="none"/>
+                    <path d="M392,50 Q398,44 392,38" stroke-linecap="round"/>
+                    <path d="M350,8 Q356,2 350,2" stroke-linecap="round"/>
+                    <path d="M376,8 C372,4 364,4 364,10 C364,16 372,18 376,14 C380,10 376,6 372,8" fill="rgba(99,102,241,0.3)" stroke="none"/>
+                </g>
+                <!-- زوايا أسفل يسار -->
+                <g fill="none" stroke="currentColor" stroke-width="1.5" color="#6366f1">
+                    <path d="M20,500 Q20,512 32,512 L80,512"/>
+                    <path d="M8,500 L8,440 Q8,500 20,500"/>
+                    <circle cx="20" cy="500" r="4" fill="#6366f1" stroke="none"/>
+                    <path d="M32,512 Q44,518 44,506 Q44,500 38,500 Q32,500 32,506 Q32,512 38,512" fill="none"/>
+                    <path d="M8,470 Q2,476 8,482" stroke-linecap="round"/>
+                    <path d="M50,512 Q44,518 50,518" stroke-linecap="round"/>
+                    <path d="M24,512 C28,516 36,516 36,510 C36,504 28,502 24,506 C20,510 24,514 28,512" fill="rgba(99,102,241,0.3)" stroke="none"/>
+                </g>
+                <!-- زوايا أسفل يمين -->
+                <g fill="none" stroke="currentColor" stroke-width="1.5" color="#6366f1">
+                    <path d="M380,500 Q380,512 368,512 L320,512"/>
+                    <path d="M392,500 L392,440 Q392,500 380,500"/>
+                    <circle cx="380" cy="500" r="4" fill="#6366f1" stroke="none"/>
+                    <path d="M368,512 Q356,518 356,506 Q356,500 362,500 Q368,500 368,506 Q368,512 362,512" fill="none"/>
+                    <path d="M392,470 Q398,476 392,482" stroke-linecap="round"/>
+                    <path d="M350,512 Q356,518 350,518" stroke-linecap="round"/>
+                    <path d="M376,512 C372,516 364,516 364,510 C364,504 372,502 376,506 C380,510 376,514 372,512" fill="rgba(99,102,241,0.3)" stroke="none"/>
+                </g>
+                <!-- خطوط الإطار -->
+                <line x1="90" y1="8" x2="200" y2="8" stroke="#6366f1" stroke-width="0.8" opacity="0.5"/>
+                <line x1="200" y1="8" x2="310" y2="8" stroke="#6366f1" stroke-width="0.8" opacity="0.5"/>
+                <line x1="90" y1="512" x2="200" y2="512" stroke="#6366f1" stroke-width="0.8" opacity="0.5"/>
+                <line x1="200" y1="512" x2="310" y2="512" stroke="#6366f1" stroke-width="0.8" opacity="0.5"/>
+                <line x1="8" y1="90" x2="8" y2="260" stroke="#6366f1" stroke-width="0.8" opacity="0.5"/>
+                <line x1="8" y1="260" x2="8" y2="430" stroke="#6366f1" stroke-width="0.8" opacity="0.5"/>
+                <line x1="392" y1="90" x2="392" y2="260" stroke="#6366f1" stroke-width="0.8" opacity="0.5"/>
+                <line x1="392" y1="260" x2="392" y2="430" stroke="#6366f1" stroke-width="0.8" opacity="0.5"/>
+                <!-- زخرفة وسطى علوية -->
+                <g opacity="0.6">
+                    <path d="M185,8 Q200,0 215,8" fill="none" stroke="#6366f1" stroke-width="1"/>
+                    <circle cx="200" cy="5" r="2" fill="#6366f1"/>
+                    <path d="M190,8 Q200,3 210,8" fill="none" stroke="#8b5cf6" stroke-width="0.5"/>
+                </g>
+                <!-- زخرفة وسطى سفلية -->
+                <g opacity="0.6">
+                    <path d="M185,512 Q200,520 215,512" fill="none" stroke="#6366f1" stroke-width="1"/>
+                    <circle cx="200" cy="515" r="2" fill="#6366f1"/>
+                </g>
+            </svg>
+
+            <!-- محتوى الكارت -->
+            <div class="login-header">
+                <div class="login-icon">💰</div>
+                <h2 class="login-title">مصاريف</h2>
+                <p class="login-subtitle">نظام إدارة المصاريف المشتركة</p>
+            </div>
+
+            <div class="login-form-wrap">
+                <form onsubmit="loginWithGroup(event)">
+                    <div class="form-group">
+                        <label class="form-label">🔑 كود المجموعة</label>
+                        <input type="text" id="group-code-input" class="form-control"
+                            placeholder="أدخل كود المجموعة" required autocomplete="off"
+                            style="text-align:center; font-size:20px; font-weight:700; letter-spacing:4px;">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">🔐 الرقم السري</label>
+                        <input type="password" id="login-password" class="form-control"
+                            placeholder="أدخل رقمك السري" required autocomplete="off">
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width:100%; margin-top:8px; padding:14px; font-size:16px;">
+                        🚀 دخول
+                    </button>
+                </form>
+
+                <div style="margin:18px 0; display:flex; align-items:center; gap:12px;">
+                    <div style="flex:1; height:1px; background:var(--border-color);"></div>
+                    <span style="color:var(--text-muted); font-size:12px;">أو</span>
+                    <div style="flex:1; height:1px; background:var(--border-color);"></div>
+                </div>
+
+                <div style="display:flex; flex-direction:column; gap:10px;">
+                    <button onclick="openCreateGroupModal()" class="btn btn-outline" style="width:100%;">
+                        ➕ إنشاء مجموعة جديدة
+                    </button>
+                    <button onclick="openRegisterModal()" class="btn btn-outline btn-sm" style="width:100%;">
+                        📝 طلب انضمام لمجموعة
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="login-screen" style="display:none;"></div>
+
+    <!-- ================================
+         🎯 المحتوى الرئيسي
+    ================================ -->
+    <div id="main-content" class="logged-in-only">
+        <div class="container">
+            <!-- الهيدر -->
+            <header class="header">
+                <div class="header-top">
+                    <div class="logo-section">
+                        <div class="logo-icon">💰</div>
+                        <div class="logo-text">
+                            <div class="logo-title-row">
+                                <h1>مصاريف</h1>
+                                <span class="app-credit">Developed by Ali Elbaz</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="theme-toggle" onclick="toggleTheme()" title="تبديل الثيم">🌙</button>
+                </div>
+
+                <div class="header-status-row">
+                    <div class="status-badge" id="firebase-status">
+                        <span class="status-indicator"></span>
+                        <span id="connection-status">غير متصل</span>
+                    </div>
+                    <div class="status-badge" id="user-badge">
+                        <span class="status-indicator"></span>
+                        <span id="user-status">مستخدم</span>
+                    </div>
+                    <button class="btn btn-danger btn-sm logged-in-only header-logout-btn" onclick="logoutUser()">
+                        🚪 خروج
+                    </button>
+                </div>
+            </header>
+
+            <!-- ========== صفحة 1: الرئيسية ========== -->
+            <div class="app-page active" id="page-home">
+                <!-- الإحصائيات -->
+                <div class="stats-grid">
+                    <div class="stat-card stat-total">
+                        <div class="stat-icon">💵</div>
+                        <div class="stat-value" id="stat-total-expenses">0 ج.م</div>
+                        <div class="stat-label">إجمالي المصاريف</div>
+                    </div>
+                    <div class="stat-card stat-paid">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-value" id="stat-my-paid">0 ج.م</div>
+                        <div class="stat-label">أنا دفعت</div>
+                    </div>
+                    <div class="stat-card stat-owed">
+                        <div class="stat-icon">⏳</div>
+                        <div class="stat-value" id="stat-my-owed">0 ج.م</div>
+                        <div class="stat-label">عليّ</div>
+                    </div>
+                    <div class="stat-card stat-net">
+                        <div class="stat-icon">⚖️</div>
+                        <div class="stat-value" id="stat-my-net">0 ج.م</div>
+                        <div class="stat-label">الصافي</div>
+                    </div>
+                </div>
+
+                <!-- شبكة الأدوات -->
+                <div class="tools-grid logged-in-only grid">
+                    <div class="tool-btn" onclick="openDashboardSubpage()">
+                        <div class="tool-btn-icon" style="background: linear-gradient(135deg,#ec4899,#db2777); color:#fff;">📈</div>
+                        <div class="tool-btn-label">داشبورد</div>
+                    </div>
+                    <div class="tool-btn" onclick="openReportsModal()">
+                        <div class="tool-btn-icon" style="background: linear-gradient(135deg,#06b6d4,#0ea5e9); color:#fff;">📊</div>
+                        <div class="tool-btn-label">تقارير الدورات</div>
+                    </div>
+                    <div class="tool-btn admin-only flex" onclick="openRegistrationRequestsModal()">
+                        <div class="tool-btn-icon" style="background: linear-gradient(135deg,#f59e0b,#b45309); color:#fff;">📥</div>
+                        <div class="tool-btn-label">طلبات التسجيل</div>
+                        <span id="requests-badge-grid" class="tool-btn-badge" style="display:none;"></span>
+                    </div>
+                    <div class="tool-btn admin-only flex" onclick="openUsersModal()">
+                        <div class="tool-btn-icon" style="background: linear-gradient(135deg,#6366f1,#4f46e5); color:#fff;">👥</div>
+                        <div class="tool-btn-label">إدارة المستخدمين</div>
+                    </div>
+                    <div class="tool-btn superadmin-only flex" onclick="openFirebaseConfigModal()">
+                        <div class="tool-btn-icon" style="background: linear-gradient(135deg,#475569,#1e293b); color:#fff;">🔥</div>
+                        <div class="tool-btn-label">إعدادات Firebase</div>
+                    </div>
+                    <div class="tool-btn" onclick="openContactSubpage()">
+                        <div class="tool-btn-icon" style="background: linear-gradient(135deg,#10b981,#059669); color:#fff;">💬</div>
+                        <div class="tool-btn-label">تواصل معنا</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== صفحة 2: إضافة مصروف ========== -->
+            <div class="app-page" id="page-add">
+                <div class="card logged-in-only">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="card-icon">💳</div>
+                            إضافة مصروف جديد
+                        </div>
+                    </div>
+                    <div id="edit-expense-banner" style="display:none; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px; margin-bottom:14px; background: var(--accent-warning-bg); border: 1px solid var(--accent-warning); border-radius: var(--radius-sm); color: var(--accent-warning); font-size: 13px; font-weight: 600;">
+                        <span>✏️ بتعدّل مصروف موجود</span>
+                        <button type="button" class="btn btn-outline btn-sm" onclick="cancelEditExpense()">إلغاء التعديل</button>
+                    </div>
+                    <form id="form-add-expense" onsubmit="addExpense(event)">
+                            <div class="form-row-2col">
+                                <div class="form-group">
+                                    <label class="form-label">📅 التاريخ</label>
+                                    <input type="date" id="expense-date" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">🏷️ الفئة</label>
+                                    <select id="expense-category" class="form-control" required>
+                                        <option value="food">🍔 طعام ومشروبات</option>
+                                        <option value="transport">🚗 مواصلات</option>
+                                        <option value="entertainment">🎬 ترفيه</option>
+                                        <option value="utilities">💡 فواتير</option>
+                                        <option value="shopping">🛍️ تسوق</option>
+                                        <option value="health">⚕️ صحة</option>
+                                        <option value="other">📦 أخرى</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-row-2col">
+                                <div class="form-group">
+                                    <label class="form-label">💵 المبلغ</label>
+                                    <input type="number" id="expense-amount" class="form-control" placeholder="0.00" step="0.01" required oninput="validateCustomSplit()" autocomplete="off">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">📝 الوصف</label>
+                                    <input type="text" id="expense-desc" class="form-control" placeholder="وصف المصروف" required autocomplete="off">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="pot-checkbox-label">
+                                    <input type="checkbox" id="expense-from-pot" onchange="toggleFromPot()">
+                                    <span>ادفع من الحصالة المشتركة</span>
+                                </label>
+                            </div>
+
+                            <div class="form-group" id="participants-section">
+                                <label class="form-label">🎯 المشتركين في التحمل</label>
+                                
+                                <!-- نوع التقسيم -->
+                                <div class="split-type-switch">
+                                    <label class="split-type-btn">
+                                        <input type="radio" name="split-type" value="equal" checked onchange="toggleSplitType()">
+                                        <span>⚖️ متساوي</span>
+                                    </label>
+                                    <label class="split-type-btn">
+                                        <input type="radio" name="split-type" value="custom" onchange="toggleSplitType()">
+                                        <span>⚡ مخصص</span>
+                                    </label>
+                                </div>
+
+                                <!-- Checkboxes للتقسيم المتساوي -->
+                                <div id="equal-split-section">
+                                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; gap: 8px;">
+                                        <p style="font-size: 12px; color: var(--text-muted); margin: 0;">
+                                            اختر المشاركين في التحمل
+                                        </p>
+                                        <button type="button" id="toggle-all-btn" onclick="toggleAllParticipants()" class="btn btn-outline btn-sm" style="white-space: nowrap; padding: 5px 12px; font-size: 12px;">
+                                            ✓ تحديد الكل
+                                        </button>
+                                    </div>
+                                    <div class="participant-grid" id="participants-checkboxes"></div>
+                                </div>
+
+                                <!-- Inputs للتقسيم المخصص -->
+                                <div id="custom-split-section" style="display: none;">
+                                    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
+                                        حدد المبلغ الذي يتحمله كل شخص
+                                    </p>
+                                    <div id="participants-custom-inputs" style="display: flex; flex-direction: column; gap: 12px;"></div>
+                                    <div id="split-validation" style="margin-top: 12px; padding: 8px; border-radius: 6px; font-size: 13px; font-weight: 500;"></div>
+                                </div>
+                            </div>
+
+                            <div class="sticky-submit-spacer"></div>
+                            <button type="submit" id="add-expense-submit-btn" class="btn btn-success sticky-submit-btn">
+                                ✅ حفظ المصروف
+                            </button>
+                        </form>
+                    </div>
+            </div>
+
+            <!-- ========== صفحة 3: لوحة الحسابات ========== -->
+            <div class="app-page" id="page-accounts">
+                    <div class="tools-grid logged-in-only grid">
+                        <div class="tool-btn" onclick="switchPage('page-add')">
+                            <div class="tool-btn-icon" style="background: linear-gradient(135deg,#22c55e,#16a34a); color:#fff;">➕</div>
+                            <div class="tool-btn-label">إضافة</div>
+                        </div>
+                        <div class="tool-btn" onclick="switchPage('page-accounts-dashboard')">
+                            <div class="tool-btn-icon" style="background: linear-gradient(135deg,#6366f1,#4f46e5); color:#fff;">📊</div>
+                            <div class="tool-btn-label">لوحة الحسابات</div>
+                        </div>
+                        <div class="tool-btn" onclick="openPotSubpage()">
+                            <div class="tool-btn-icon" style="background: linear-gradient(135deg,#f59e0b,#d97706); color:#fff;">🏺</div>
+                            <div class="tool-btn-label">الحصالة المشتركة</div>
+                        </div>
+                        <div class="tool-btn" onclick="openExpensesLogSubpage()">
+                            <div class="tool-btn-icon" style="background: linear-gradient(135deg,#8b5cf6,#6d28d9); color:#fff;">📜</div>
+                            <div class="tool-btn-label">سجل المصاريف</div>
+                        </div>
+                    </div>
+            </div>
+
+            <!-- ========== صفحة 3ب: لوحة الحسابات ========== -->
+            <div class="app-page" id="page-accounts-dashboard">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="card-icon">💰</div>
+                                لوحة الحسابات
+                            </div>
+                            <button class="btn btn-danger btn-sm admin-only" onclick="openResetModal()">
+                                🔄 تصفير العداد
+                            </button>
+                        </div>
+                        <div class="summary-grid" id="dashboard"></div>
+                    </div>
+            </div>
+
+            <!-- ========== صفحة 4: التسوية النهائية ========== -->
+            <div class="app-page" id="page-settlement">
+                    <div class="card logged-in-only">
+                        <div class="card-header">
+                            <div class="card-title settle-page-title">
+                                <div class="card-icon" style="width:30px; height:30px; font-size:16px;">💰</div>
+                                التسوية النهائية
+                            </div>
+                            <button type="button" class="btn btn-outline btn-sm" onclick="shareSettlementSummary()">📤 مشاركة</button>
+                        </div>
+                        <div class="settle-mode-switch">
+                            <button type="button" class="settle-mode-btn active" id="mode-btn-detailed" onclick="setSettlementMode('detailed')">
+                                📋 تسوية تفصيلية
+                            </button>
+                            <button type="button" class="settle-mode-btn" id="mode-btn-direct" onclick="setSettlementMode('direct')">
+                                ⚡ تسوية مباشرة
+                            </button>
+                        </div>
+                        <div id="settlements-dashboard" style="padding: 16px;"></div>
+                    </div>
+            </div>
+
+            <!-- ========== صفحة 5: الإعدادات (لكل المستخدمين) ========== -->
+            <div class="app-page" id="page-settings">
+                    <div class="profile-header-card">
+                        <div class="profile-header-avatar" id="settings-avatar-initial">؟</div>
+                        <div>
+                            <div class="profile-header-name" id="settings-my-name">—</div>
+                            <div class="profile-header-role" id="settings-my-role">عضو</div>
+                        </div>
+                    </div>
+
+                    <div class="settings-section-label">الحساب</div>
+                    <div class="card">
+                        <div class="settings-group">
+                            <button class="btn btn-primary" onclick="openMyProfileModal()">
+                                ✏️ تعديل اسمي / رقمي السري
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="settings-section-label" id="security-section-label" style="display:none;">الأمان</div>
+                    <div class="card" id="biometric-security-card" style="display:none;">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="card-icon card-icon-orange">🔒</div>
+                                قفل الجلسة
+                            </div>
+                        </div>
+                        <div class="settings-group">
+                            <label class="pot-checkbox-label" style="justify-content: space-between;">
+                                <span>🔒 قفل الجلسة بالبصمة / قفل الشاشة</span>
+                                <input type="checkbox" id="biometric-lock-toggle" onchange="toggleBiometricLock(event)" style="width:20px; height:20px;">
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="settings-section-label superadmin-only">الإدارة</div>
+                    <div class="card superadmin-only">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="card-icon card-icon-dark">⚙️</div>
+                                إعدادات الإدارة
+                            </div>
+                        </div>
+                        <div class="settings-group">
+                            <p style="font-size:12px; color:var(--text-muted); margin:0;">
+                                أدوات الإدارة (المستخدمين، طلبات التسجيل، Firebase) دلوقتي في شبكة الأدوات بصفحة الرئيسية.
+                            </p>
+                            <div class="btn btn-outline" style="direction:ltr; text-align:center; cursor:default; opacity:0.8;">
+                                Developed by Ali Elbaz
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="text-align:center; padding: 16px 0; font-size:12px; color: var(--text-muted);">
+                        الإصدار <span id="app-version-label">—</span>
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================
+         📱 شريط التابس السفلي
+    ================================ -->
+    <nav class="tab-bar logged-in-only flex" id="tab-bar">
+        <button class="tab-btn active" data-page="page-home" onclick="switchPage('page-home')">
+            <span class="tab-icon">🏠</span>
+            <span>الرئيسية</span>
+        </button>
+        <button class="tab-btn" data-page="page-accounts" onclick="switchPage('page-accounts')">
+            <span class="tab-icon">👥</span>
+            <span>الحسابات</span>
+        </button>
+        <button class="tab-btn" data-page="page-settlement" onclick="switchPage('page-settlement')">
+            <span class="tab-icon">⚖️</span>
+            <span>التسوية</span>
+        </button>
+        <button class="tab-btn tab-settings" data-page="page-settings" onclick="switchPage('page-settings')">
+            <span class="tab-icon">⚙️</span>
+            <span>الإعدادات</span>
+        </button>
+    </nav>
+
+    <!-- مودال إنشاء مجموعة جديدة -->
+    <div class="modal" id="create-group-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">➕ إنشاء مجموعة جديدة</h3>
+                <button class="modal-close" onclick="closeCreateGroupModal()">✕</button>
+            </div>
+            <form onsubmit="createGroup(event)">
+                <div class="form-group">
+                    <label class="form-label">🏷️ اسم المجموعة</label>
+                    <input type="text" id="new-group-name" class="form-control" placeholder="مثال: شلة الأصدقاء" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">🔑 كود المجموعة</label>
+                    <input type="text" id="new-group-code" class="form-control" placeholder="اختر كود سهل (أرقام أو حروف)" required autocomplete="off" style="letter-spacing:3px; font-weight:700;">
+                    <p style="font-size:12px; color:var(--text-muted); margin-top:4px;">الكود بيدخله أعضاء المجموعة عشان يوصلوا</p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">👑 اسم المشرف (أنت)</label>
+                    <input type="text" id="new-group-admin-name" class="form-control" placeholder="اسمك" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">🔐 رقم سري للمشرف</label>
+                    <input type="password" id="new-group-admin-pass" class="form-control" placeholder="رقم سري خاص بك" required autocomplete="new-password" minlength="4">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%;">
+                    🚀 إنشاء المجموعة
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================================
+         🎭 المودالز
+    ================================ -->
+
+    <!-- مودال Firebase Config -->
+    <div class="modal" id="firebase-config-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">⚙️ إعداد Firebase</h3>
+                <button class="modal-close" onclick="closeFirebaseConfigModal()">✕</button>
+            </div>
+            
+            <div id="config-status" style="padding: 12px; border-radius: 8px; text-align: center; font-weight: 600; margin-bottom: 16px; background: rgba(148, 163, 184, 0.1); color: var(--text-muted);">
+                غير متصل بـ Firebase
+            </div>
+
+            <form onsubmit="saveFirebaseConfig(event)">
+                <div class="form-group">
+                    <label class="form-label">اسم المشرف (Admin)</label>
+                    <input type="text" id="config-adminName" class="form-control" placeholder="مثال: على" required>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+                        هذا الاسم سيظهر للجميع وسيستخدم في الحسابات
+                    </p>
+                </div>
+                
+                <hr style="border: none; border-top: 1px solid var(--border-color); margin: 20px 0;">
+                
+                <div class="form-group">
+                    <label class="form-label">API Key</label>
+                    <input type="text" id="config-apiKey" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Auth Domain</label>
+                    <input type="text" id="config-authDomain" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Database URL</label>
+                    <input type="text" id="config-databaseURL" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Project ID</label>
+                    <input type="text" id="config-projectId" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Storage Bucket</label>
+                    <input type="text" id="config-storageBucket" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Messaging Sender ID</label>
+                    <input type="text" id="config-messagingSenderId" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">App ID</label>
+                    <input type="text" id="config-appId" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-primary admin-only" style="width: 100%;">
+                    💾 حفظ واتصال
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- مودال تصفير العداد -->
+    <div class="modal" id="reset-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">⚠️ تصفير العداد</h3>
+                <button class="modal-close" onclick="closeResetModal()">✕</button>
+            </div>
+            
+            <div class="alert alert-warning">
+                <span class="alert-icon">⚠️</span>
+                <div>
+                    <strong>تحذير!</strong>
+                    <p style="margin-top: 4px; font-size: 13px;">سيتم حفظ جميع البيانات الحالية في الأرشيف وبدء فترة جديدة من الصفر.</p>
+                </div>
+            </div>
+
+            <form onsubmit="confirmReset(event)">
+                <div class="form-group">
+                    <label class="form-label">اسم الفترة الجديدة</label>
+                    <input type="text" id="reset-period-name" class="form-control" placeholder="مثال: فبراير 2025" required autocomplete="off">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">تأكيد برقمك السري الخاص</label>
+                    <input type="password" id="reset-confirm-password" class="form-control" placeholder="أدخل رقمك السري للتأكيد" required autocomplete="off">
+                </div>
+                
+                <button type="submit" class="btn btn-danger" style="width: 100%;">
+                    🔄 تأكيد التصفير
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- مودال تعديل اسم المستخدم -->
+    <div class="modal" id="edit-user-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">✏️ تعديل بيانات المستخدم</h3>
+                <button class="modal-close" onclick="closeEditUserModal()">✕</button>
+            </div>
+            
+            <form onsubmit="saveUserData(event)">
+                <div class="form-group">
+                    <label class="form-label">👤 الاسم</label>
+                    <input type="text" id="edit-user-name" class="form-control" placeholder="أدخل الاسم" required autocomplete="off">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">🔑 رقم سري جديد (اختياري)</label>
+                    <input type="text" id="edit-user-password" class="form-control" placeholder="اتركه فارغاً إذا لا تريد تغييره" autocomplete="off">
+                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+                        لأسباب أمان، الرقم السري الحالي لا يُعرض. اكتب رقمًا هنا بس لو عايز تغيّره.
+                    </p>
+                </div>
+                
+                <input type="hidden" id="edit-user-id">
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    💾 حفظ التعديل
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- مودال إضافة مستخدم جديد -->
+    <div class="modal" id="add-user-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">➕ إضافة مستخدم جديد</h3>
+                <button class="modal-close" onclick="closeAddUserModal()">✕</button>
+            </div>
+            
+            <form onsubmit="addUser(event)">
+                <div class="form-group">
+                    <label class="form-label">الاسم</label>
+                    <input type="text" id="new-user-name" class="form-control" placeholder="اسم المستخدم" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">الرقم السري</label>
+                    <input type="text" id="new-user-password" class="form-control" placeholder="الرقم السري" required autocomplete="off">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    ➕ إضافة مستخدم
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- مودال قائمة المستخدمين -->
+    <div class="modal" id="users-modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h3 class="modal-title">👥 إدارة المستخدمين</h3>
+                <button class="modal-close" onclick="closeUsersModal()">✕</button>
+            </div>
+            
+            <div style="margin-bottom: 16px;">
+                <button class="btn btn-success" onclick="closeUsersModal(); openAddUserModal();" style="width: 100%;">
+                    ➕ إضافة مستخدم جديد
+                </button>
+            </div>
+            
+            <ul class="users-list" id="users-modal-list" style="max-height: 500px; overflow-y: auto;"></ul>
+        </div>
+    </div>
+
+    <!-- مودال التقارير -->
+    <div class="modal" id="reports-modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h3 class="modal-title">📊 تقارير الدورات السابقة</h3>
+                <button class="modal-close" onclick="closeReportsModal()">✕</button>
+            </div>
+            <div id="reports-container"></div>
+        </div>
+    </div>
+
+    <!-- مودال تسجيل حساب جديد -->
+    <div class="modal" id="register-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">➕ تسجيل حساب جديد</h3>
+                <button class="modal-close" onclick="closeRegisterModal()">✕</button>
+            </div>
+            <div style="padding: 12px; background: rgba(6,182,212,0.1); border-radius: var(--radius-sm); margin-bottom: 16px; font-size: 13px; color: var(--text-secondary);">
+                ℹ️ سيتم مراجعة طلبك من قبل المشرف، وستتمكن من الدخول بعد الموافقة
+            </div>
+            <form onsubmit="submitRegistration(event)">
+                <div class="form-group">
+                    <label class="form-label">🔑 كود المجموعة</label>
+                    <input type="text" id="register-group-code" class="form-control" placeholder="أدخل كود المجموعة اللي هتنضم لها" required autocomplete="off"
+                        style="text-align:center; font-size:18px; font-weight:700; letter-spacing:3px;">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">👤 الاسم</label>
+                    <input type="text" id="register-name" class="form-control" placeholder="أدخل اسمك" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">🔐 الرقم السري</label>
+                    <input type="password" id="register-password" class="form-control" placeholder="اختر رقم سري" required minlength="4" autocomplete="new-password">
+                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">على الأقل 4 أرقام</p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">🔐 تأكيد الرقم السري</label>
+                    <input type="password" id="register-password-confirm" class="form-control" placeholder="أعد إدخال الرقم السري" required autocomplete="new-password">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    📤 إرسال الطلب
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- مودال طلبات التسجيل (Admin) -->
+    <div class="modal" id="registration-requests-modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h3 class="modal-title">📥 طلبات التسجيل</h3>
+                <button class="modal-close" onclick="closeRegistrationRequestsModal()">✕</button>
+            </div>
+            <div id="registration-requests-container"></div>
+        </div>
+    </div>
+
+    <!-- ================================
+         🔥 Firebase SDK + JavaScript
+    ================================ -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>
